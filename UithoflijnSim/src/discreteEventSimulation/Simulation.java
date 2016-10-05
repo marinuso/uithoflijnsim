@@ -94,7 +94,7 @@ public abstract class Simulation {
 	 * run until empty or time exceeded
 	 */
 	public void runUntilTime(int time) throws SimulationException {
-		while (hasNextEvent() && time <= currentTime) runNextEvent();
+		while (hasNextEvent() && currentTime <= time) runNextEvent();
 	}
 	
 	/**
