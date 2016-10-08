@@ -1,6 +1,6 @@
 package discreteEventSimulation;
 
-import java.util.Date;
+import java.util.*;
 
 public class SimulationTests {
 	public static void runSimFrameworkTests() throws Exception {
@@ -9,8 +9,9 @@ public class SimulationTests {
 		System.out.println(TestSimulation.runSimC());
 		System.out.println(TestSimulation.runSimD());
 		System.out.println(TestSimulation.runSimE());
+		System.out.println(TestSimulation.runSimF());
 		
-		int time = (int) 1e8;
+		int time = (int) 1e9;
 		long begin = new Date().getTime();
 		int ts = StressTestSimulation.runStressTest(time);
 		long end = new Date().getTime();
@@ -113,6 +114,21 @@ class TestSimulation extends Simulation {
 		ts.scheduleNow(new RecursiveTestEvent('A', ts));
 		ts.run();
 		return ts.toString();
+	}
+	
+	// scheduling in random order
+	public static String runSimF() throws Exception {
+		TestSimulation ts = new TestSimulation();
+	    ArrayList<Character> chars = new ArrayList<Character>();
+	    for (char c='A'; c<='Z'; c++) {
+	    	chars.add(c);
+	    }
+	    Collections.shuffle(chars);
+	    for (char c : chars) {
+	    	ts.scheduleAbsolute(c, new TestEvent(""+c, ts, ""+c));;
+	    }
+	    ts.run();
+	    return ts.toString();
 	}
 	
 	public String toString() {
