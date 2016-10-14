@@ -1,7 +1,66 @@
 package uithoflijnSim;
 
-public class Train {
-	public final static int CAPACITY = 23;
-	public final static int LENGTH = 45;
+import java.util.*;
+import discreteEventSimulation.*;
+
+public class Train extends UithoflijnObject {
+
+	public final static int CAPACITY = 210*2; // occupants
+	public final static int LENGTH = 55; // meters
 	
+	private ArrayList<Passenger> passengers;
+	
+	public Train(Uithoflijn u) {
+		super(u);
+		
+		passengers = new ArrayList<Passenger>();
+	}
+	
+	/**
+	 * Current occupancy
+	 */
+	public int occupancy() { return passengers.size(); }
+	
+	/**
+	 * Update all passenger occupancy
+	 */
+	private void updateOccupancy() {
+		for (Passenger p : passengers) p.updateOccupancy();
+	}
+	
+	/**
+	 * A passenger boards
+	 * @param p
+	 */
+	public void board(Passenger p) throws SimulationException {
+		if (passengers.size() < CAPACITY) {
+			p.board(this);
+			passengers.add(p);
+		} else {
+			throw new SimulationException("Passenger attempted to board full train.");
+		}
+	}
+	
+	/**
+	 * Passengers disembark
+	 */
+	public ArrayList<Passenger> disembark(Stop s) {
+		ArrayList<Passenger> dis = new ArrayList<Passenger>();
+		
+		ListIterator<Passenger> iter = passengers.listIterator();
+		Passenger p;
+		
+		while (iter.hasNext()) {
+			p = iter.next();
+			
+			// is p supposed to disembark here?
+			if (p.getDestination() == s) {
+				p.arrive();        // p arrives
+				dis.add(p);        // p is added to list of arrivals
+				iter.remove();     // p is removed from list of passengers
+			}
+		}
+		
+		return dis;
+	}
 }
