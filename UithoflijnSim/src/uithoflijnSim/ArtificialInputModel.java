@@ -1,22 +1,112 @@
 package uithoflijnSim;
 import java.nio.file.*;
 import java.util.*;
+
+import discreteEventSimulation.RNG;
+
 import java.io.*;
 
 /*
  * Artificial input model read from a file
  */
 public class ArtificialInputModel extends InputModel {
-	
+	ArrayList<Record> records;
 	
 	public ArtificialInputModel(String file) throws IOException, IllegalArgumentException {
 		List<String> lines = Files.readAllLines(Paths.get(file));
 	
+		records = new ArrayList<Record>();
+		
 		for (String line : lines) {
 			Record r = new Record(line);
+			records.add(r);
 		}
 	}
 	
+	// get mean arrival time given t
+	public double meanPassengerArrivalTime(Uithoflijn u, String stop, boolean dirFromCS) {
+		double hour = 6 + ((double)u.getCurrentTime())/3600;
+		
+		// if before or after hours, return 0
+		if (hour < 6 || hour > 21.5) return 0;
+		
+		// find stop
+		Record stopRecord = null;
+		for (Record r : records) {
+			if (r.stopName().equals(stop) && r.dirFromCS()==dirFromCS
+					&& r.from()<=hour && r.to()>hour) {
+				stopRecord = r;
+				break;
+			}
+		}
+		
+		
+		// passengers/sec
+		double secs = (stopRecord.to()-stopRecord.from())*3600;
+		double pass_sec = stopRecord.passin()/secs;
+		return pass_sec;
+	}
+	
+	// get a passenger for a station given t
+	public Passenger generatePassenger(Uithoflijn u, String stop, boolean dirFromCS) {
+		/* t = seconds, t=0 = 6 o'clock */
+		
+		double hour = 6 + ((double)u.getCurrentTime())/3600;
+		
+		// find stop + possible destinations
+		Record stopRecord = null;
+		ArrayList<Record> destinations = new ArrayList<Record>();
+		boolean looking = false;
+		for (Record r : records) {
+			if (r.stopName().equals(stop) && r.dirFromCS()==dirFromCS
+					&& r.from()<=hour && r.to()>hour) {
+				stopRecord = r;
+				looking = true;
+				continue;
+			}
+			
+			
+			boolean keepLooking = stopRecord != null
+				 && r.dirFromCS() == stopRecord.dirFromCS()
+				 && r.from() == stopRecord.from()
+				 && r.to() == stopRecord.to();
+			
+			if (looking	&& !keepLooking) {
+				looking = false;
+				break;
+			}
+			
+			if (looking && keepLooking) {
+				destinations.add(r);
+			}
+		}
+		
+		// total passengers possible in destinations
+		double totPassenger = 0;
+		for (Record r : destinations) totPassenger += r.passout();
+		
+		// find stop
+		destinations.sort((Record r1, Record r2) -> new Double(r1.passout()).compareTo(r2.passout()));
+		double passengerNo = RNG.doubleBetween(0, totPassenger);
+		
+		double nPassenger = 0;
+		Record passStop = null; 
+		for (Record r : destinations) {
+			nPassenger += r.passout();
+			if (nPassenger <= passengerNo) {
+				passStop = r;
+				break;
+			}
+		}
+		
+		// stop gotten from Uithoflijn
+		Stop origin = u.getStop(stop, dirFromCS);
+		Stop destination = u.getStop(passStop.stopName(), passStop.dirFromCS());
+		
+		// make passenger
+		Passenger p = new Passenger(u, origin, destination);
+		return p;
+	}
 	
 }
 
@@ -27,12 +117,13 @@ class Record {
 	private double passin, passout;
 	
 	public Record(String stopName,
-				  boolean dirToCS,
+				  boolean dirFromCS,
 				  double from,
 				  double to,
 				  double passin,
 				  double passout) {
 		this.stopName=stopName;
+		this.dirFromCS=dirFromCS;
 		this.from=from;
 		this.to=to;
 		this.passin=passin;
@@ -54,7 +145,7 @@ class Record {
 	}
 	
 	public String stopName() { return stopName; }
-	public boolean dirToCS() { return dirFromCS; }
+	public boolean dirFromCS() { return dirFromCS; }
 	public double from() { return from; }
 	public double to() { return to; }
 	public double passin() { return passin; }

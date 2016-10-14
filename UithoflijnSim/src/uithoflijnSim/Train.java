@@ -36,6 +36,7 @@ public class Train extends UithoflijnObject {
 		if (passengers.size() < CAPACITY) {
 			p.board(this);
 			passengers.add(p);
+			updateOccupancy();
 		} else {
 			throw new SimulationException("Passenger attempted to board full train.");
 		}
@@ -61,6 +62,7 @@ public class Train extends UithoflijnObject {
 			}
 		}
 		
+		updateOccupancy();
 		return dis;
 	}
 }

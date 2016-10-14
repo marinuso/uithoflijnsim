@@ -12,5 +12,8 @@ public abstract class InputModel {
 		"Vaartscherijn",
 		"Centraal Station Centrumzijde"
 	};
-
+	
+	public abstract Passenger generatePassenger(Uithoflijn u, String stop, boolean dirFromCS);
+    public abstract double meanPassengerArrivalTime(Uithoflijn u, String stop, boolean dirFromCS);
+    
 }
