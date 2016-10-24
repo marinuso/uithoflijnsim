@@ -67,7 +67,6 @@ public class Stop extends UithoflijnObject {
 		}
 		
 		// schedule train departure after set time
-		// TODO: 
 		double meanDwell = 12.5 + 0.22*boarded + 0.13*disembarked.size();
 		double gammaDwell = DistribUtil.gamma2(meanDwell);
 		
@@ -99,7 +98,7 @@ class TrainArrival extends Event {
 	}
 	
 	public String description() {
-		return "[Departure] " + stop.description();
+		return "[Arrival] " + stop.description();
 	}
 	
 	public void run() throws SimulationException {
