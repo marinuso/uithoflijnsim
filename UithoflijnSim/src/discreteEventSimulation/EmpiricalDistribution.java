@@ -6,7 +6,7 @@ import java.io.*;
 /**
  * Empirical Distribution
  */
-public class EmpiricalDistribution {
+public class EmpiricalDistribution implements IDistribution {
 	private ArrayList<Double> dataset;
 	private double average;
 	

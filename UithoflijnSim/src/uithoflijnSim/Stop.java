@@ -2,15 +2,41 @@ package uithoflijnSim;
 import discreteEventSimulation.*;
 import java.util.*;
 
-public class Stop extends UithoflijnObject {
+public class Stop extends UithoflijnObject implements ITrainReceiver {
+	
+	public final static int SAFETY_MARGIN = 40; // 40 seconds
+	
 	private String name;
 	private boolean dirFromCS;
 	
 	// trains that are waiting
 	private LinkedList<Train> trains;
+	private int nextArrivalTime; 
 	
 	// passengers who are waiting
 	private LinkedList<Passenger> passengers;
+	
+	// next stop
+	private ITrainReceiver nextStop = null;
+	private int nextStopDistance;
+	
+	private void checkNextStopSet() {
+		// check if stop has been set
+		if (nextStop == null) {
+			throw new IllegalStateException(description() + " No next stop set.");
+		}		
+	}
+	
+	public int getNextStopDistance() {
+		checkNextStopSet();
+		return nextStopDistance;
+	}
+	
+	public ITrainReceiver getNextStop() { 
+		checkNextStopSet();
+		return nextStop;
+	}
+	
 	
 	public Stop(Uithoflijn u, String name, boolean dirFromCS) {
 		super(u);
@@ -20,17 +46,45 @@ public class Stop extends UithoflijnObject {
 		
 		passengers = new LinkedList<Passenger>();
 		trains = new LinkedList<Train>();
+		
+		nextArrivalTime = 0;
 	}
 	
 	public void addPassenger(Passenger p) {
 		passengers.add(p);
 	}
 	
-	public void addTrain(Train t) throws ScheduleException {
+	protected void addTrain(Train t) throws ScheduleException {
 		trains.add(t);
 		
 		// if this is the only train, dwell.
 		if (trains.size() == 1) uithoflijn.scheduleNow(new Dwell(this));
+	}
+	
+	/**
+	 * Schedule train arrival 
+	 * 
+	 * @param t Train
+	 * @param distance Distance in meters
+	 */
+	public void scheduleTrainArrival(Train t, int distance) throws ScheduleException {
+		
+		/* generate next arrival time from distribution */
+		int time = (int) uithoflijn.getTravelSpeedDistribution().sampleSum(distance);
+		int absTime = uithoflijn.getCurrentTime() + time;
+		
+		/* take into account that trains cannot skip each other,
+		 * the minimum arrival time is the arrival time of the last train
+		 * plus the safety margin
+		 */
+		
+		int minNextArrival = nextArrivalTime + SAFETY_MARGIN;
+		nextArrivalTime = Math.max(minNextArrival, absTime);
+		
+		/* actually schedule the train arrival */
+		uithoflijn.scheduleAbsolute(nextArrivalTime,
+				new TrainArrival(this, t));
+		
 	}
 	
 	// schedule passenger arrival
@@ -103,7 +157,6 @@ class TrainArrival extends Event {
 	
 	public void run() throws SimulationException {
 		stop.addTrain(train);
-		
 	}
 }
 
@@ -140,7 +193,9 @@ class TrainDeparture extends Event {
 	}
 
 	public void run() throws SimulationException {
-		// TODO: schedule arrival at next station
+		ITrainReceiver ts = stop.getNextStop();
+		int dst = stop.getNextStopDistance();
+		ts.scheduleTrainArrival(train,  dst);
 		
 		// if still trains left in queue, dwell again
 		stop.dwellAgainIfNecessary();
