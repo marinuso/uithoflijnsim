@@ -18,10 +18,12 @@ public class Uithoflijn extends Simulation {
 	// the stops (Name - toCS)
 	public List<Triple<String, Boolean, Stop>> stops;
 	
-	public Uithoflijn(InputModel inputModel) {
+	public Uithoflijn(InputModel inputModel) throws ScheduleException {
+		Debug.out("Initializing Uithoflijn\n");
 		this.inputModel = inputModel;
 		servedPassengers = new ArrayList<Passenger>();
 		
+		Debug.out("Setting up stops\n");
 		setUpStops();
 	}
 	
@@ -50,7 +52,7 @@ public class Uithoflijn extends Simulation {
 	}
 	
 	// set up the stops
-	private void setUpStops() {
+	private void setUpStops() throws ScheduleException {
 		
 		// stops where trams go to CS
 		Stop PR_Uithof_toCS      = makeStop("P+R Uithof",     false, false);
@@ -111,7 +113,8 @@ public class Uithoflijn extends Simulation {
 	
 	
 	/* initialize a stop */
-	private Stop makeStop(String name, boolean dirFromCS, boolean isTurnaroundStop) {
+	private Stop makeStop(String name, boolean dirFromCS, boolean isTurnaroundStop)
+	throws ScheduleException {
 		Stop s = new Stop(this, name, dirFromCS, isTurnaroundStop);
 		Triple<String, Boolean, Stop> t = new Triple<>(name, dirFromCS, s);
 		stops.add(t);

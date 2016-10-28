@@ -51,7 +51,7 @@ public class Stop extends UithoflijnObject implements ITrainReceiver {
 		this.avgSpeed = avgSpeed;
 	}
 	
-	public Stop(Uithoflijn u, String name, boolean dirFromCS, boolean isTurnaroundStop) {
+	public Stop(Uithoflijn u, String name, boolean dirFromCS, boolean isTurnaroundStop) throws ScheduleException {
 		super(u);
 		
 		this.name = name;
@@ -63,6 +63,8 @@ public class Stop extends UithoflijnObject implements ITrainReceiver {
 		nextArrivalTime = 0;
 		
 		this.isTurnaroundStop = isTurnaroundStop;
+		
+		schedulePassengerArrival();
 	}
 	
 	public void addPassenger(Passenger p) {

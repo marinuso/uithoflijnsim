@@ -10,7 +10,7 @@ public class Train extends UithoflijnObject {
 	
 	private ArrayList<Passenger> passengers;
 	
-	public Train(Uithoflijn u) {
+	public Train(Uithoflijn u, int prDeparture) {
 		super(u);
 		
 		passengers = new ArrayList<Passenger>();
