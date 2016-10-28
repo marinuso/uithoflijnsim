@@ -41,9 +41,9 @@ public class EmpiricalDistribution implements IDistribution {
 	
 	public double average() { return average; }
 	
-	public double normalizedSample() { return sample() / average; }
+	public double sample() { return rawSample() / average; }
 	
-	public double sample() {
+	public double rawSample() {
 		return dataset.get(RNG.intBetween(0, dataset.size()));
 	}
 	

@@ -5,7 +5,7 @@ import util.*;
 
 /**
  * 
- * Train crossover:
+ * Train crossover: 
  * 
  *  --->---  inA ->-. .-<-  inB ---<---
  *                   X
@@ -26,6 +26,7 @@ public class Crossover extends UithoflijnObject {
 	
 	private ITrainReceiver outputA=null, outputB=null;
 	private int outputAdist, outputBdist;
+    private double outputAspeed, outputBspeed;
 	private String name;
 	
 	protected int nextArrivalTimeA;
@@ -57,9 +58,9 @@ public class Crossover extends UithoflijnObject {
 		if (trains.size() == 1) uithoflijn.scheduleNow(new Transit(this));
 	}
 	
-	protected void scheduleTrainArrival(Train t, int distance, Output o) throws ScheduleException {
+	protected void scheduleTrainArrival(Train t, int distance, double avgSpeed, Output o) throws ScheduleException {
 		/* generate next arrival time from distribution */
-		int time = (int) uithoflijn.getTravelSpeedDistribution().sampleSum(distance);
+		int time = (int) (avgSpeed*uithoflijn.getTravelSpeedDistribution().sampleSum(distance));
 		int absTime = uithoflijn.getCurrentTime() + time;
 		
 		/* take into account that trains cannot skip each other,
@@ -92,16 +93,17 @@ public class Crossover extends UithoflijnObject {
 			// schedule its arrival at whatever's connected to its output
 			ITrainReceiver o=null;
 			int d=0;
+			double s=0;
 			
 			if (t.getY() == Output.A) {
-				o=outputA; d=outputAdist;
+				o=outputA; d=outputAdist; s=outputAspeed;
 			} else if (t.getY() == Output.B) {
-				o=outputB; d=outputBdist;
+				o=outputB; d=outputBdist; s=outputBspeed;
 			} else {
 				throw new IllegalStateException("Invalid output!"); 
 			}
 			
-			o.scheduleTrainArrival(t.getX(), d);
+			o.scheduleTrainArrival(t.getX(), d, s);
 			
 			if (trains.size() != 0) {
 				// if there are trains left, schedule another transit after the
@@ -119,14 +121,16 @@ public class Crossover extends UithoflijnObject {
 		return inputB;
 	}
 	
-	public void setOutputA(ITrainReceiver o, int distance) {
+	public void setOutputA(ITrainReceiver o, int distance, double avgSpeed) {
 		outputA = o;
 		outputAdist = distance;
+		outputAspeed = avgSpeed;
 	}
 	
-	public void setOutputB(ITrainReceiver o, int distance) {
+	public void setOutputB(ITrainReceiver o, int distance, double avgSpeed) {
 		outputB = o;
 		outputBdist = distance;
+		outputBspeed = avgSpeed;
 	}
 	
 	public int getOutputADistance() {
@@ -139,6 +143,11 @@ public class Crossover extends UithoflijnObject {
 		return outputA;
 	}
 	
+	public double getOutputASpeed() {
+		checkIfSet(outputA);
+		return outputAspeed;
+	}
+	
 	public int getOutputBDistance() {
 		checkIfSet(outputB);
 		return outputBdist;
@@ -147,6 +156,11 @@ public class Crossover extends UithoflijnObject {
 	public int getOutputB() {
 		checkIfSet(outputB);
 		return outputBdist;
+	}
+	
+	public double getOutputBSpeed() {
+		checkIfSet(outputB);
+		return outputBspeed;
 	}
 	
 	public String description() {
@@ -168,8 +182,8 @@ class CrossoverInput implements ITrainReceiver {
 	}
 	
 	@Override
-	public void scheduleTrainArrival(Train t, int distance) throws ScheduleException {
-		crossover.scheduleTrainArrival(t, distance, output);
+	public void scheduleTrainArrival(Train t, int distance, double avgSpeed) throws ScheduleException {
+		crossover.scheduleTrainArrival(t, distance, avgSpeed, output);
 	}
 	
 }

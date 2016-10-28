@@ -19,6 +19,9 @@ public class Stop extends UithoflijnObject implements ITrainReceiver {
 	// next stop
 	private ITrainReceiver nextStop = null;
 	private int nextStopDistance;
+	private double avgSpeed; // seconds per meter
+	
+	private boolean isTurnaroundStop;
 	
 	private void checkNextStopSet() {
 		// check if stop has been set
@@ -37,8 +40,18 @@ public class Stop extends UithoflijnObject implements ITrainReceiver {
 		return nextStop;
 	}
 	
+	public double getAvgSpeed() {
+		checkNextStopSet();
+		return avgSpeed;
+	}
 	
-	public Stop(Uithoflijn u, String name, boolean dirFromCS) {
+	public void setNextStop(ITrainReceiver nextStop, int distance, double avgSpeed) {
+		this.nextStop = nextStop;
+		this.nextStopDistance = distance;
+		this.avgSpeed = avgSpeed;
+	}
+	
+	public Stop(Uithoflijn u, String name, boolean dirFromCS, boolean isTurnaroundStop) {
 		super(u);
 		
 		this.name = name;
@@ -48,6 +61,8 @@ public class Stop extends UithoflijnObject implements ITrainReceiver {
 		trains = new LinkedList<Train>();
 		
 		nextArrivalTime = 0;
+		
+		this.isTurnaroundStop = isTurnaroundStop;
 	}
 	
 	public void addPassenger(Passenger p) {
@@ -67,10 +82,10 @@ public class Stop extends UithoflijnObject implements ITrainReceiver {
 	 * @param t Train
 	 * @param distance Distance in meters
 	 */
-	public void scheduleTrainArrival(Train t, int distance) throws ScheduleException {
+	public void scheduleTrainArrival(Train t, int distance, double avgSpeed) throws ScheduleException {
 		
 		/* generate next arrival time from distribution */
-		int time = (int) uithoflijn.getTravelSpeedDistribution().sampleSum(distance);
+		int time = (int) (avgSpeed*uithoflijn.getTravelSpeedDistribution().sampleSum(distance));
 		int absTime = uithoflijn.getCurrentTime() + time;
 		
 		/* take into account that trains cannot skip each other,
@@ -123,6 +138,9 @@ public class Stop extends UithoflijnObject implements ITrainReceiver {
 		// schedule train departure after set time
 		double meanDwell = 12.5 + 0.22*boarded + 0.13*disembarked.size();
 		double gammaDwell = DistribUtil.gamma2(meanDwell);
+		
+		// if this is an end station, then we need to take the turnaround time into account
+		if (isTurnaroundStop) gammaDwell = Math.max(gammaDwell, uithoflijn.getTurnaroundTime());
 		
 		// schedule train departure after set time
 		uithoflijn.scheduleRelative((int) gammaDwell, new TrainDeparture(this, train));
@@ -195,7 +213,8 @@ class TrainDeparture extends Event {
 	public void run() throws SimulationException {
 		ITrainReceiver ts = stop.getNextStop();
 		int dst = stop.getNextStopDistance();
-		ts.scheduleTrainArrival(train,  dst);
+		double avgSpeed = stop.getAvgSpeed();
+		ts.scheduleTrainArrival(train, dst, avgSpeed);
 		
 		// if still trains left in queue, dwell again
 		stop.dwellAgainIfNecessary();

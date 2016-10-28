@@ -1,12 +1,13 @@
 package util;
 
+
 /**
  * Pair
  */
-public final class Pair<T, U> {
+public class Pair<T, U> {
 	
-	private T x;
-	private U y;
+	private final T x;
+	private final U y;
   
 	/**
 	 * 2-tuple

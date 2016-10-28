@@ -14,7 +14,7 @@ public interface ITrainReceiver {
 	 * @param t The train
 	 * @param distance The distance, in meters, to this stop
 	 */
-	public void scheduleTrainArrival(Train t, int distance) throws ScheduleException;
+	public void scheduleTrainArrival(Train t, int distance, double avgSpeed) throws ScheduleException;
 	
 
 }
