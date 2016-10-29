@@ -38,13 +38,13 @@ public class Depot extends UithoflijnObject {
 		spawnpoint.scheduleTrainArrival(t, 0,  1);
 		
 		int i = interval;
-		if (uithoflijn.getCurrentTime() < 3600   // ...7 am
-		||  uithoflijn.getCurrentTime() >= 43200 // 7 pm...
+		if (uithoflijn.getCurrentTime() < UithofTime.t(7)   // ...7 am
+		||  uithoflijn.getCurrentTime() >= UithofTime.t(19) // 7 pm...
 				) i = 15*60; // 4 an hour
 		   
 		
 		if (uithoflijn.getCurrentTime()<lastTime
-		&&  uithoflijn.getCurrentTime()<52200) uithoflijn.scheduleRelative(i, event);
+		&&  uithoflijn.getCurrentTime()<UithofTime.t(21,30)) uithoflijn.scheduleRelative(i, event);
 	}
 	
 	

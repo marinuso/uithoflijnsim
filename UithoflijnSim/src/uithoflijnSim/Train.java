@@ -43,9 +43,20 @@ public class Train extends UithoflijnObject {
 	}
 	
 	/**
-	 * Passengers disembark
+	 * All passengers disembark
+	 */
+	public ArrayList<Passenger> disembarkAll() {
+		return disembark(true, null);
+	}
+	
+	/**
+	 * Passengers disembark at stop
 	 */
 	public ArrayList<Passenger> disembark(Stop s) {
+		return disembark(false, s);
+	}
+	
+	private ArrayList<Passenger> disembark(boolean isEnd, Stop s) {
 		ArrayList<Passenger> dis = new ArrayList<Passenger>();
 		
 		ListIterator<Passenger> iter = passengers.listIterator();
@@ -55,7 +66,7 @@ public class Train extends UithoflijnObject {
 			p = iter.next();
 			
 			// is p supposed to disembark here?
-			if (p.getDestination() == s) {
+			if (isEnd || p.getDestination() == s) {
 				p.arrive();        // p arrives
 				dis.add(p);        // p is added to list of arrivals
 				iter.remove();     // p is removed from list of passengers
