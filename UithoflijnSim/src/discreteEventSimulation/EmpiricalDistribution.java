@@ -10,6 +10,27 @@ public class EmpiricalDistribution implements IDistribution {
 	private ArrayList<Double> dataset;
 	private double average;
 	
+	
+	public EmpiricalDistribution(InputStream is) throws IOException {
+		dataset = new ArrayList<Double>();
+		
+		InputStreamReader isr = new InputStreamReader(is);
+		BufferedReader bfr = new BufferedReader(isr);
+		
+		double tally = 0;
+		String line;
+		while ((line = bfr.readLine()) != null) {
+			try {
+				double d = Double.parseDouble(line);
+				dataset.add(d);
+				tally += d;
+			} catch (NumberFormatException ne) {
+				// doesn't matter
+			}
+		}
+		average = tally/dataset.size();
+		
+	}
 	public EmpiricalDistribution(String path) throws IOException {
 		dataset = new ArrayList<Double>();
 		

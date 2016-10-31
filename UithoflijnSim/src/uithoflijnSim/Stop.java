@@ -109,10 +109,14 @@ public class Stop extends UithoflijnObject implements ITrainReceiver {
 	// schedule passenger arrival
 	public void schedulePassengerArrival() throws ScheduleException {
 		double meanArrival = uithoflijn.getInputModel().meanPassengerArrivalTime(uithoflijn, name, dirFromCS);
-		if (meanArrival > 3600*12) return; // no more passengers
+		if (meanArrival > 3600*24) {
+			// no more passengers - check back in a minute
+			//uithoflijn.scheduleRelative(60, new PassengerArrival(this,true));
+			return;
+		}
 	
 		int nextArrival = DistribUtil.poisson(meanArrival);
-	    uithoflijn.scheduleRelative(nextArrival, new PassengerArrival(this));		
+	    uithoflijn.scheduleRelative(nextArrival, new PassengerArrival(this,false));		
 	}
 	
 	
@@ -232,10 +236,11 @@ class TrainDeparture extends Event {
 
 class PassengerArrival extends Event {
 	Stop stop;
-	
-	public PassengerArrival(Stop s) {
+	private final boolean keepalive;
+	public PassengerArrival(Stop s, boolean keepalive) {
 		super();
 		stop=s;
+		this.keepalive=keepalive;
 	}
 	
 	public String description() {
@@ -243,10 +248,12 @@ class PassengerArrival extends Event {
 	}
 
 	public void run() throws SimulationException {
-		// generate a passenger
-		Passenger p = stop.uithoflijn.getInputModel().generatePassenger(stop.uithoflijn, stop.name(), stop.dirFromCS());
-		// add it to the stop
-		stop.addPassenger(p);
+		if (!keepalive) {
+			// generate a passenger
+			Passenger p = stop.uithoflijn.getInputModel().generatePassenger(stop.uithoflijn, stop.name(), stop.dirFromCS());
+			// add it to the stop
+			stop.addPassenger(p);
+		}
 		// schedule next
 		stop.schedulePassengerArrival();
 	}

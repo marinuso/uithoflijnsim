@@ -8,12 +8,12 @@ import util.Debug;
 import java.io.*;
 
 /*
- * Artificial input model read from a file
+ input model read from a file
  */
-public class ArtificialInputModel extends InputModel {
+public class FileInputModel extends InputModel {
 	ArrayList<Record> records;
 	
-	public ArtificialInputModel(String file) throws IOException, IllegalArgumentException {
+	public FileInputModel(String file) throws IOException, IllegalArgumentException {
 		List<String> lines = Files.readAllLines(Paths.get(file));
 	
 		records = new ArrayList<Record>();
@@ -28,7 +28,8 @@ public class ArtificialInputModel extends InputModel {
 	
 	// get mean arrival time given t
 	public double meanPassengerArrivalTime(Uithoflijn u, String stop, boolean dirFromCS) {
-		double hour = 6 + ((double)u.getCurrentTime())/3600;
+		//double hour = 6 + ((double)u.getCurrentTime())/3600;
+		double hour = UithofTime.hour(u.getCurrentTime());
 		
 		// if before or after hours, return 0
 		if (hour < 6 || hour > 21.5) return 0;
@@ -43,6 +44,9 @@ public class ArtificialInputModel extends InputModel {
 			}
 		}
 		
+		if (stopRecord == null) {
+			Debug.out("Record not found: " + stop + " " + hour + " " + dirFromCS + "\n");
+		}
 		
 		// seconds btw passengers
 		double secs = (stopRecord.to()-stopRecord.from())*3600;

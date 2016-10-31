@@ -16,6 +16,8 @@ public class UithofTime {
 		return tFromHours(hours + (double)minutes/60.);
 	}
 	
+	public static double hour(int t)  { return t/3600. + START_TIME; }
+	
 	public static int t(double h)     { return tFromHours(h); }
 	public static int t(int h, int m) { return tFromHoursMinutes(h,m); }
 	
