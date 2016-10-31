@@ -7,6 +7,10 @@ public class DistribUtil {
 	 * (Law p. 470)
 	 */
 	public static int poisson(double lambda) {
+		// speed it up slighly - shouldn't do this but what the hey
+		if (lambda > 1000) return 10*poisson(lambda/10);
+		
+		//System.err.print(" ::poisson("+lambda+")=");
 		double a = Math.pow(Math.E, -lambda);
 		double b = 1;
 		int i = -1;
@@ -16,6 +20,7 @@ public class DistribUtil {
 			b *= RNG.doubleBetween(0,1);
 		}
 		
+		//System.err.println(i);
 		return i;
 	}
 	

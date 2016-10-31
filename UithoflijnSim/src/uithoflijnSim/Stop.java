@@ -1,5 +1,7 @@
 package uithoflijnSim;
 import discreteEventSimulation.*;
+import util.Debug;
+
 import java.util.*;
 
 public class Stop extends UithoflijnObject implements ITrainReceiver {
@@ -107,7 +109,7 @@ public class Stop extends UithoflijnObject implements ITrainReceiver {
 	// schedule passenger arrival
 	public void schedulePassengerArrival() throws ScheduleException {
 		double meanArrival = uithoflijn.getInputModel().meanPassengerArrivalTime(uithoflijn, name, dirFromCS);
-		if (meanArrival == 0) return; // no more passengers
+		if (meanArrival > 3600*12) return; // no more passengers
 	
 		int nextArrival = DistribUtil.poisson(meanArrival);
 	    uithoflijn.scheduleRelative(nextArrival, new PassengerArrival(this));		
@@ -213,6 +215,10 @@ class TrainDeparture extends Event {
 	}
 
 	public void run() throws SimulationException {
+		//Debug.out("Train #" + train.trainN() 
+		//  +" leaving from " + stop.description() + " @ " + train.uithoflijn.getCurrentTime() + "\n");
+		
+		
 		ITrainReceiver ts = stop.getNextStop();
 		int dst = stop.getNextStopDistance();
 		double avgSpeed = stop.getAvgSpeed();

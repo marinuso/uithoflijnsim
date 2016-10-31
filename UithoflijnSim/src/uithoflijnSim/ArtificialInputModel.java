@@ -3,6 +3,7 @@ import java.nio.file.*;
 import java.util.*;
 
 import discreteEventSimulation.RNG;
+import util.Debug;
 
 import java.io.*;
 
@@ -18,6 +19,8 @@ public class ArtificialInputModel extends InputModel {
 		records = new ArrayList<Record>();
 		
 		for (String line : lines) {
+			if (line.contains("From")) continue; // header
+			
 			Record r = new Record(line);
 			records.add(r);
 		}
@@ -41,10 +44,14 @@ public class ArtificialInputModel extends InputModel {
 		}
 		
 		
-		// passengers/sec
+		// seconds btw passengers
 		double secs = (stopRecord.to()-stopRecord.from())*3600;
-		double pass_sec = stopRecord.passin()/secs;
-		return pass_sec;
+		double sec_pass = secs/stopRecord.passin();
+		
+		//Debug.out(" mPAT s="+stop+"("+dirFromCS+"), passin="+stopRecord.passin()+", sec_pass="+sec_pass+"\n");
+		
+		// we actually really want seconds per passengers
+		return sec_pass;
 	}
 	
 	// get a passenger for a station given t
@@ -93,15 +100,15 @@ public class ArtificialInputModel extends InputModel {
 		Record passStop = null; 
 		for (Record r : destinations) {
 			nPassenger += r.passout();
-			if (nPassenger <= passengerNo) {
+			if (nPassenger >= passengerNo) {
 				passStop = r;
 				break;
 			}
 		}
 		
 		// stop gotten from Uithoflijn
-		Stop origin = u.getStop(stop, dirFromCS);
-		Stop destination = u.getStop(passStop.stopName(), passStop.dirFromCS());
+		ITrainReceiver origin = u.getStop(stop, dirFromCS);
+		ITrainReceiver destination = u.getStop(passStop.stopName(), passStop.dirFromCS());
 		
 		// make passenger
 		Passenger p = new Passenger(u, origin, destination);
@@ -142,6 +149,7 @@ class Record {
 	    this.to = Double.parseDouble(fields[3]);
 	    this.passin = Double.parseDouble(fields[4]);
 	    this.passout = Double.parseDouble(fields[5]);
+	    
 	}
 	
 	public String stopName() { return stopName; }

@@ -48,20 +48,61 @@ public class EndStop extends UithoflijnObject implements ITrainReceiver {
 	
 	protected boolean crossoverOccupied = false; // whether crossover is OK.
 	
-	protected EndStop(Uithoflijn u, String name, boolean dirFromCS) {
+	private Depot depot; // depot, if there is one.
+	
+	protected EndStop(Uithoflijn u, String name, boolean dirFromCS) throws SimulationException {
+		this(u, name, dirFromCS, null);
+	}
+	
+	/**
+	 *  place a train on a free spot, if there is a free spot, without blocking.
+	 *  (this is for 'spawning' trains at the depot)
+	 */
+	public void placeTrain(Train t) throws SimulationException {
+		// is there space?
+		if (!hasFreePosition()) throw new IllegalStateException("Cannot place train, no space.");
+		
+		// place train in space
+		Position p = getFreePosition();
+		setTrainAtPos(p, t);
+		
+		// dwell immediately (this'll take care of its departure &c.)
+		dwell(p, true);
+	}
+
+	protected EndStop(Uithoflijn u, String name, boolean dirFromCS, Depot depot) 
+	throws SimulationException {
 		super(u);
 		
 		this.name = name;
 		this.dirFromCS = dirFromCS;
-		
 		trains = new LinkedList<Train>();
+	
+		this.depot = depot;
+		this.passengers = new LinkedList<Passenger>();
 		
+		if (depot != null) {
+			// ask it for the first train
+			depot.nextTrainReady(this);
+		}
+	}
+	
+	public void setDepot(Depot depot) throws SimulationException {
+		if (this.depot != null) throw new IllegalStateException("Cannot reset depot.");
+		this.depot = depot;
+		depot.nextTrainReady(this);
+	}
+	
+	public void setNextStop(ITrainReceiver nextStop, int distance, double avgSpeed) {
+		this.nextStop=nextStop;
+		this.nextStopDistance=distance;
+		this.avgSpeed=avgSpeed;
 	}
 	
 	// schedule passenger arrival
 	public void schedulePassengerArrival() throws ScheduleException {
 		double meanArrival = uithoflijn.getInputModel().meanPassengerArrivalTime(uithoflijn, name, dirFromCS);
-		if (meanArrival == 0) return; // no more passengers
+		if (meanArrival > 3600*24) return; // no more passengers
 	
 		int nextArrival = DistribUtil.poisson(meanArrival);
 	    uithoflijn.scheduleRelative(nextArrival, new ESPassengerArrival(this));		
@@ -85,7 +126,7 @@ public class EndStop extends UithoflijnObject implements ITrainReceiver {
 		return null;
 	}
 	
-	private Train getTrainAtPos(Position x) {
+	protected Train getTrainAtPos(Position x) {
 		if (x==Position.A) return posATrain;
 		if (x==Position.B) return posBTrain;
 		throw new IllegalStateException("Invalid position: " + x);
@@ -157,19 +198,39 @@ public class EndStop extends UithoflijnObject implements ITrainReceiver {
 		}
 		// if a train is waiting to enter, and there is a position free, let it in
 		else if (hasFreePosition()) {
-			uithoflijn.scheduleNow(new ESTransitCrossover(this));
+			if (depot != null && depot.hasTrain()) depot.nextTrainReady(this);
+			else uithoflijn.scheduleNow(new ESTransitCrossover(this));
 		}
 		
 		// and if nothing, just leave it unblocked and wait for a new train to arrive
 	}
 	
 	protected void dwell(Position p) throws SimulationException {
+		dwell(p,false);
+	}
+	
+	private void dwell(Position p, boolean isPlacedTrain) throws SimulationException {
 		// calculate when it's due to leave		
 		Train train = getTrainAtPos(p);
 		
 		// remove passengers
 		ArrayList<Passenger> disembarked = train.disembarkAll();
 		uithoflijn.addServedPassengers(disembarked);
+		
+		// if the train is done, remove it.
+		if (train.isDone() || (train.getDepartures().size() == 1 && depot!=null)) {
+			if (depot == null) { // if train doesn't end at beginning...
+				throw new SimulationException("Train ended up at CS! - @ " + uithoflijn.getCurrentTime());
+			}
+			// remove train from tracks
+			setDepartureReady(p, false);
+			setTrainAtPos(p, null);
+			
+			// send it back to the depot
+			depot.trainDone(train);
+			
+			return;
+		}
 		
 		// add passengers
 		
@@ -189,15 +250,24 @@ public class EndStop extends UithoflijnObject implements ITrainReceiver {
 		
 		double turnaround = uithoflijn.getTurnaroundTime();
 		
-		// TODO: adjust to schedule
+		
 		turnaround = Math.max(turnaround, MIN_TURNAROUND_TIME);
-		gammaDwell = Math.max(gammaDwell, turnaround);
+		
+		// trains placed by the depot are a special case.
+		if (! isPlacedTrain) gammaDwell = Math.max(gammaDwell, turnaround);
+		
+		int minLeaveTime = (int) (uithoflijn.getCurrentTime() + gammaDwell);
+		
+		int shouldLeaveTime = train.nextDeparture();
+		
+		int departureTime = Math.max(shouldLeaveTime, minLeaveTime);
 		
 		// this position is not ready to leave
 		setDepartureReady(p, false);
 		
+		Debug.out("Train #" + train.trainN() + " scheduled to leave from " + description() + " @ " + departureTime + "\n");
 		// schedule train departure after set time
-		uithoflijn.scheduleRelative((int) gammaDwell, new ESDepartureReady(this, p));
+		uithoflijn.scheduleAbsolute(departureTime, new ESDepartureReady(this, p));
 	}
 	
 	protected void departureReady(Position p) throws SimulationException {
@@ -208,13 +278,17 @@ public class EndStop extends UithoflijnObject implements ITrainReceiver {
 	}
 	
 	protected void depart(Position p) throws SimulationException {
+		
 		// schedule the arrival
 		nextStop.scheduleTrainArrival(getTrainAtPos(p), nextStopDistance, avgSpeed);
+		getTrainAtPos(p).recordDeparture();
 		// block the crossing
 		crossoverOccupied = true;
 		// remove the train from the position
 		setDepartureReady(p, false);
 		setTrainAtPos(p, null);
+		
+
 		// unblock the crossing after safety margin
 		uithoflijn.scheduleRelative(Stop.SAFETY_MARGIN, new ESUnblockCrossover(this));
 	}
@@ -332,6 +406,11 @@ class ESTrainDeparture extends Event {
 
 	@Override
 	public void run() throws SimulationException {
+		Debug.out("Train leaving from " + es.description() + " @ " + es.uithoflijn.getCurrentTime() + "\n");
+		
+		StringBuilder s = new StringBuilder();
+		for (int i : es.getTrainAtPos(p).getDepartures()) s.append(","+i);
+		Debug.out("left "+s+"\n");
 		es.depart(p);
 	}
 	

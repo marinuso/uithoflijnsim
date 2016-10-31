@@ -2,6 +2,8 @@ package discreteEventSimulation;
 
 import java.util.*;
 
+import util.Debug;
+
 /**
  * Discrete event simulation framework
  *
@@ -11,6 +13,7 @@ public abstract class Simulation {
 	protected LinkedList<ScheduledEvent> schedule; // schedule
 	
 	public Simulation() {
+		Debug.out("Simulation init.\n");
 		currentTime = 0;
 		schedule = new LinkedList<ScheduledEvent>();
 	}
@@ -50,6 +53,7 @@ public abstract class Simulation {
 	}
 	
 	protected void scheduleAbsolute(ScheduledEvent se) throws ScheduleException {
+		//Debug.out("Schedule: " + se.description() + "\n");
 		// cannot schedule in the past
 		if (se.getTimestamp() < currentTime) throw new ScheduleException(se, currentTime);
 		
@@ -82,10 +86,14 @@ public abstract class Simulation {
 	 * run the next event
 	 */
 	public void runNextEvent() throws SimulationException {
+
+		
 		if (schedule.isEmpty()) throw new SimulationException("Empty event list.");
 		
 		ScheduledEvent se = schedule.removeFirst();
 		currentTime = se.getTimestamp();
+		
+		//Debug.out("Event: " + se.description() + " @ " + currentTime + "\n");
 		
 		se.run();
 	}

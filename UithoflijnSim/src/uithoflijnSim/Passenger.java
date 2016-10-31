@@ -1,4 +1,5 @@
 package uithoflijnSim;
+import util.*;
 
 /**
  *
@@ -6,8 +7,8 @@ package uithoflijnSim;
  *
  */
 public class Passenger extends UithoflijnObject {
-	private Stop origin;
-	private Stop destination;
+	private ITrainReceiver origin;
+	private ITrainReceiver destination;
 	private Train train;
 	
 	private int tStart; // arrival at station
@@ -17,11 +18,21 @@ public class Passenger extends UithoflijnObject {
 	private double tramOccupancy; // amount of people in tram on average
 	private int nStops; // amount of stops had
 	
+	private static int passengers = 0;
+	
+	/**
+	 * csv string
+	 * @return start,board,arrive,occupancy
+	 */
+	public String csv() {
+		return "" + tStart + "," + tBoard + "," + tArrive + "," + tramOccupancy + "\n";
+	}
+	
 	/**
 	 * Passenger
 	 * 
 	 */
-	public Passenger(Uithoflijn u, Stop origin, Stop destination) {
+	public Passenger(Uithoflijn u, ITrainReceiver origin, ITrainReceiver destination) {
 		super(u);
 		this.origin = origin;
 		this.destination = destination;
@@ -31,6 +42,8 @@ public class Passenger extends UithoflijnObject {
 		
 		// passenger arrives at station when he is created
 		this.tStart = uithoflijn.getCurrentTime();
+		
+		//Debug.out(" Passenger #" + ++passengers + "\n");
 	}
 	
 	/**
@@ -72,12 +85,12 @@ public class Passenger extends UithoflijnObject {
 	/**
 	 * Origin
 	 */
-	public Stop getOrigin() { return origin; }
+	public ITrainReceiver getOrigin() { return origin; }
 	
 	/**
 	 * Destination 
 	 */
-	public Stop getDestination() { return destination; }
+	public ITrainReceiver getDestination() { return destination; }
 	
 	/**
 	 * Average crowdedness

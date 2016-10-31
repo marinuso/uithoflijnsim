@@ -1,5 +1,6 @@
 package uithoflijnSim;
 
+import util.*;
 import java.util.*;
 import discreteEventSimulation.*;
 
@@ -8,12 +9,61 @@ public class Train extends UithoflijnObject {
 	public final static int CAPACITY = 210*2; // occupants
 	public final static int LENGTH = 55; // meters
 	
+	private static int nTrains = 0;
+	private int trainN = 0;
+	
+	public int trainN(){ return trainN; }
+	
 	private ArrayList<Passenger> passengers;
 	
-	public Train(Uithoflijn u, int prDeparture) {
+	private LinkedList<Integer> departures; // departures at end stations
+	
+	private LinkedList<Pair<Integer,Integer>> actualDepartures;
+	
+	public String csv() {
+		StringBuilder sb = new StringBuilder();
+		for (Pair<Integer,Integer> p : actualDepartures) {
+			sb.append(trainN);
+			sb.append(",");
+			sb.append(p.getX());
+			sb.append(",");
+			sb.append(p.getY());
+			sb.append("\n");
+		}
+		return sb.toString();
+	}
+	
+	public Train(Uithoflijn u, int prDeparture, LinkedList<Integer> departures) {
 		super(u);
 		
+		trainN = ++nTrains;
+		
+		
 		passengers = new ArrayList<Passenger>();
+		this.departures = departures;
+		
+		if (departures == null) throw new IllegalArgumentException("Departures is null!");
+
+		Debug.out("Train #" + trainN + " created, final departure = " + departures.getLast() + ".\n");
+
+		this.actualDepartures = new LinkedList<Pair<Integer,Integer>>();
+	}
+	
+	public int nextDeparture() { 
+		if (departures == null) throw new IllegalStateException("This is exceptionally weird.");
+		return departures.peek(); 
+	}
+	
+	public List<Integer> getDepartures() { return departures; }
+	
+	public boolean isDone() { return departures.size() == 0; } 
+	
+	public void recordDeparture() {
+		int supposed = departures.remove();
+		int actual = uithoflijn.getCurrentTime();
+		
+		Debug.out( "Train #" + trainN + " leaving @ " + actual + " / sched " + supposed + "\n");
+		actualDepartures.add(new Pair<>(supposed, actual));
 	}
 	
 	/**
